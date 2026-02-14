@@ -5,11 +5,14 @@ library;
 class Tax {
   final String name;
   final double rate;
-  final bool isInclusive;
+  final bool isInclusive; // kept for compatibility (not used in global mode)
 
-  const Tax({required this.name, required this.rate, required this.isInclusive});
+  const Tax({
+    required this.name,
+    required this.rate,
+    required this.isInclusive,
+  });
 }
-
 /// A class that handles tax calculations
 class TaxCalculator {
   /// Calculates the total amount including taxes
@@ -27,44 +30,55 @@ class TaxCalculator {
       List<Tax> taxes, {
         bool isInclusive = false,
       }) {
+    final taxAmounts = <String, double>{};
+
     if (taxes.isEmpty) {
       return {
-        'totalExclusivePrice': price,
-        'total': price,
-        'taxAmounts': <String, double>{},
+        'totalExclusivePrice': _round(price),
+        'total': _round(price),
+        'taxAmounts': taxAmounts,
       };
     }
 
-    final taxAmounts = <String, double>{};
-    double total = price;
-    double totalExclusivePrice = price;
+    if (!isInclusive) {
+      // ✅ Forward calculation (exclusive price)
+      double total = price;
 
-    if (isInclusive) {
-      // Calculate backwards from inclusive price
-      double remainingAmount = price;
       for (final tax in taxes) {
-        final taxAmount = remainingAmount * (tax.rate / (1 + tax.rate));
-        taxAmounts[tax.name] = taxAmount;
-        remainingAmount -= taxAmount;
+        final amount = price * tax.rate;
+        taxAmounts[tax.name] = _round(amount);
+        total += amount;
       }
-      totalExclusivePrice = remainingAmount;
+
+      return {
+        'totalExclusivePrice': _round(price),
+        'total': _round(total),
+        'taxAmounts': taxAmounts,
+      };
     } else {
-      // Calculate forward from exclusive price
-      for (final tax in taxes) {
-        final taxAmount = price * tax.rate;
-        taxAmounts[tax.name] = taxAmount;
-        total += taxAmount;
-      }
-    }
+      // ✅ Correct proportional backward calculation
+      final totalRate =
+      taxes.fold(0.0, (sum, tax) => sum + tax.rate);
 
-    return {
-      'totalExclusivePrice': totalExclusivePrice,
-      'total': isInclusive ? price : total,
-      'taxAmounts': taxAmounts,
-    };
+      final basePrice = price / (1 + totalRate);
+
+      for (final tax in taxes) {
+        final amount = basePrice * tax.rate;
+        taxAmounts[tax.name] = _round(amount);
+      }
+
+      return {
+        'totalExclusivePrice': _round(basePrice),
+        'total': _round(price),
+        'taxAmounts': taxAmounts,
+      };
+    }
   }
 
-  /// Formats a number as currency in GHS (Ghana Cedis)
+  static double _round(double value) {
+    return double.parse(value.toStringAsFixed(2));
+  }
+
   static String formatCurrency(double amount) {
     return 'GHS ${amount.toStringAsFixed(2)}';
   }
