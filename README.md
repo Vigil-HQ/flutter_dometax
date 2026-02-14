@@ -29,7 +29,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_dometax: ^1.0.0
+  flutter_dometax: ^0.0.2
 ```
 
 ## Usage

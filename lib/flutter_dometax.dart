@@ -64,6 +64,8 @@ class TaxCalculator {
 
       for (final tax in taxes) {
         final amount = basePrice * tax.rate;
+
+        
         taxAmounts[tax.name] = _round(amount);
       }
 
